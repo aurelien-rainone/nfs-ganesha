@@ -4,15 +4,10 @@ add_definitions(
 
 SET(fsals3_LIB_SRCS
   up.c
-  main.c
-  export.c
-  handle.c
-  internal.c
-  internal.h
 )
 
-message("LIBS3_INCLUDE_DIR ${LIBS3_INCLUDE_DIR}")
-include_directories(${LIBS3_INCLUDE_DIR})
+message("LIBS3_INCLUDE_DIRS ${LIBS3_INCLUDE_DIRS}")
+include_directories(${LIBS3_INCLUDE_DIRS})
 
 add_library(fsals3 MODULE ${fsals3_LIB_SRCS})
 add_sanitizers(fsals3)

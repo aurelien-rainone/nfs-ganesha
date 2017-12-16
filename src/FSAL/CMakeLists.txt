@@ -34,3 +34,7 @@ endif(USE_FSAL_GLUSTER)
 if(USE_FSAL_MEM)
   add_subdirectory(FSAL_MEM)
 endif(USE_FSAL_MEM)
+
+if(USE_FSAL_S3)
+  add_subdirectory(FSAL_S3)
+endif(USE_FSAL_S3)

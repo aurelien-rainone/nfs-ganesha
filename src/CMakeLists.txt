@@ -219,6 +219,7 @@ option(USE_FSAL_GLUSTER "build GLUSTER FSAL shared library" ON)
 option(USE_FSAL_NULL "build NULL FSAL shared library" ON)
 option(USE_FSAL_RGW "build RGW FSAL shared library" OFF)
 option(USE_FSAL_MEM "build Memory FSAL shared library" ON)
+option(USE_FSAL_S3 "build S3 FSAL shared library" ON)
 option(USE_TOOL_MULTILOCK "build multilock tool" OFF)
 
 # nTIRPC
@@ -667,6 +668,17 @@ if(USE_FSAL_XFS)
   endif((NOT HAVE_XFS_LIB) OR (NOT HAVE_XFS_H))
 endif(USE_FSAL_XFS)
 
+if(USE_FSAL_S3)
+  # require LIBS3 w/API version 1.x
+  find_package(LibS3)
+  if(NOT LIBS3_FOUND)
+    message(WARNING "Cannot find libs3 runtime. Disabling S3 fsal build")
+    message(WARNING "Did you fetch the libs3 Git submodule? Did you build it, install it?")
+    message(FATAL_ERROR "Instructions are in: src/libs3/INSTALL")
+  endif(NOT LIBS3_FOUND)
+  message(STATUS "Using libs3 submodule")
+endif(USE_FSAL_S3)
+
 # sort out which allocator to use
 if(${ALLOCATOR} STREQUAL "jemalloc")
   find_package(JeMalloc)
@@ -1027,6 +1039,7 @@ message(STATUS "USE_FSAL_GPFS = ${USE_FSAL_GPFS}")
 message(STATUS "USE_FSAL_GLUSTER = ${USE_FSAL_GLUSTER}")
 message(STATUS "USE_FSAL_NULL = ${USE_FSAL_NULL}")
 message(STATUS "USE_FSAL_MEM = ${USE_FSAL_MEM}")
+message(STATUS "USE_FSAL_S3 = ${USE_FSAL_S3}")
 message(STATUS "USE_SYSTEM_NTIRPC = ${USE_SYSTEM_NTIRPC}")
 message(STATUS "USE_DBUS = ${USE_DBUS}")
 message(STATUS "USE_CB_SIMULATOR = ${USE_CB_SIMULATOR}")
@@ -1129,6 +1142,11 @@ set(USE_FSAL_GLUSTER ${USE_FSAL_GLUSTER}
 set(USE_FSAL_MEM ${USE_FSAL_MEM}
   CACHE BOOL
    "build GLUSTER FSAL"
+   FORCE)
+
+set(USE_FSAL_S3 ${USE_FSAL_S3}
+  CACHE BOOL
+   "build S3 FSAL"
    FORCE)
 
 set(USE_DBUS ${USE_DBUS}
@@ -1310,6 +1328,12 @@ if(USE_FSAL_MEM)
 else(USE_FSAL_MEM)
     set(BCOND_MEM "%bcond_with")
 endif(USE_FSAL_MEM)
+
+if(USE_FSAL_S3)
+    set(BCOND_S3 "%bcond_without")
+else(USE_FSAL_S3)
+    set(BCOND_S3 "%bcond_with")
+endif(USE_FSAL_S3)
 
 if(USE_9P_RDMA)
     set(BCOND_RDMA "%bcond_without")
