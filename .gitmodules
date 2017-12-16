@@ -1,3 +1,6 @@
 [submodule "src/libntirpc"]
 	path = src/libntirpc
 	url = https://github.com/nfs-ganesha/ntirpc.git
+[submodule "src/libs3"]
+	path = src/libs3
+	url = git@github.com:bji/libs3.git
