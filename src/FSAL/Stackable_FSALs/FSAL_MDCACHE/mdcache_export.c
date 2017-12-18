@@ -180,9 +180,16 @@ static void mdcache_exp_release(struct fsal_export *exp_hdl)
 
 	fsal_hdl = sub_export->fsal;
 
-	LogInfo(COMPONENT_FSAL, "Releasing %s export %" PRIu16 " for %s",
-		fsal_hdl->name, op_ctx->ctx_export->export_id,
-		export_path(op_ctx->ctx_export));
+    if (op_ctx != NULL && op_ctx->ctx_export != NULL) {
+        LogInfo(COMPONENT_FSAL, "Releasing %s export %"PRIu16
+            " for %s",
+            fsal_hdl->name,
+            op_ctx->ctx_export->export_id,
+            export_path(op_ctx->ctx_export));
+    } else {
+        LogInfo(COMPONENT_FSAL, "Releasing %s export",
+                fsal_hdl->name);
+    }
 
 	/* Release the sub_export */
 	subcall_shutdown_raw(exp,
