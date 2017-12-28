@@ -406,9 +406,10 @@ static struct state_t *s3_alloc_state(struct fsal_export *exp_hdl,
 	state = init_state(gsh_calloc(1, sizeof(struct state_t)
 				      + sizeof(struct fsal_fd)),
 			   exp_hdl, state_type, related_state);
-#ifdef USE_LTTNG
-	tracepoint(fsalmem, mem_alloc_state, __func__, __LINE__, state);
-#endif
+
+	LogFullDebug(COMPONENT_FSAL, "%s: state %p",
+		     __func__, state);
+
 	return state;
 }
 

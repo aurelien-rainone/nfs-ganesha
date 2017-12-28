@@ -165,9 +165,8 @@ fsal_status_t s3_create_export(struct fsal_module *fsal_hdl,
 static inline void _s3_free_handle(struct s3_fsal_obj_handle *hdl,
 				    const char *func, int line)
 {
-#ifdef USE_LTTNG
-	tracepoint(fsalmem, mem_free, func, line, hdl, hdl->m_name);
-#endif
+	LogFullDebug(COMPONENT_FSAL, "%s: hdl %p name %s",
+		     __func__, hdl, hdl->m_name);
 
 	glist_del(&hdl->mfo_exp_entry);
 	hdl->mfo_exp = NULL;

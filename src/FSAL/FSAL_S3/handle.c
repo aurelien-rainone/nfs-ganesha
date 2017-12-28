@@ -222,7 +222,9 @@ static void s3_remove_dirent_locked(struct s3_fsal_obj_handle *parent,
 	//PTHREAD_RWLOCK_unlock(&child->obj_handle.obj_lock);
 
 	numkids = atomic_dec_uint32_t(&parent->mh_dir.numkids);
-	LogFullDebug(COMPONENT_FSAL, "%s numkids %"PRIu32, parent->m_name,
+	LogFullDebug(COMPONENT_FSAL, "%s: %s numkids %"PRIu32,
+		     __func__,
+		     parent->m_name,
 		     numkids);
 
 	/* Free dirent */
@@ -267,10 +269,11 @@ void s3_clean_export(struct s3_fsal_obj_handle *root)
 	struct avltree_node *node;
 	struct s3_dirent *dirent;
 
-#ifdef USE_LTTNG
-	tracepoint(fsals3, s3_inuse, __func__, __LINE__, root,
-		   root->attrs.numlinks, root->is_export);
-#endif
+	LogFullDebug(COMPONENT_FSAL, "%s: root %p links %"PRIu32,
+		     __func__,
+		     root,
+		     root->attrs.numlinks);
+
 	while ((node = avltree_first(&root->mh_dir.avl_name))) {
 		dirent = avltree_container_of(node, struct s3_dirent, avl_n);
 
@@ -563,9 +566,10 @@ _s3_alloc_handle(struct s3_fsal_obj_handle *parent,
 		/* This is an export */
 		hdl->is_export = true;
 	}
-#ifdef USE_LTTNG
-	tracepoint(fsals3, s3_alloc, func, line, hdl, name);
-#endif
+
+	LogFullDebug(COMPONENT_FSAL, "%s: hdl=%p name=%s",
+		     __func__, hdl, name);
+
 	return hdl;
 }
 
@@ -578,11 +582,9 @@ static fsal_status_t _s3_int_lookup(struct s3_fsal_obj_handle *dir,
 	struct s3_dirent *dirent;
 
 	*entry = NULL;
-	LogFullDebug(COMPONENT_FSAL, "Lookup %s in %p", path, dir);
+	LogFullDebug(COMPONENT_FSAL, "%s: Lookup %s in %p",
+		     __func__, path, dir);
 
-#ifdef USE_LTTNG
-	tracepoint(fsals3, s3_lookup, func, line, dir, path);
-#endif
 	if (strcmp(path, "..") == 0) {
 		/* lookup parent - lookupp */
 		if (dir->mh_dir.parent == NULL) {
@@ -605,9 +607,9 @@ static fsal_status_t _s3_int_lookup(struct s3_fsal_obj_handle *dir,
 	}
 	*entry = dirent->hdl;
 
-#ifdef USE_LTTNG
-	tracepoint(fsals3, s3_lookup, func, line, *entry, (*entry)->m_name);
-#endif
+	LogFullDebug(COMPONENT_FSAL, "%s: entry %p name %s",
+		     __func__, *entry, (*entry)->m_name);
+
 	return fsalstat(ERR_FSAL_NO_ERROR, 0);
 }
 
@@ -755,8 +757,8 @@ static fsal_status_t s3_readdir(struct fsal_obj_handle *dir_hdl,
 
 	*eof = true;
 
-	LogFullDebug(COMPONENT_FSAL, "hdl=%p, name=%s",
-		     myself, myself->m_name);
+	LogFullDebug(COMPONENT_FSAL, "%s: hdl=%p, name=%s",
+		     __func__, myself, myself->m_name);
 
 	/*PTHREAD_RWLOCK_rdlock(&dir_hdl->obj_lock);*/
 
@@ -895,11 +897,6 @@ static fsal_status_t s3_getattrs(struct fsal_obj_handle *obj_hdl,
 			atomic_fetch_uint32_t(&myself->mh_dir.numkids);
 	}
 
-#ifdef USE_LTTNG
-	tracepoint(fsalmem, s3_getattrs, __func__, __LINE__, myself,
-			   myself->m_name, myself->attrs.filesize,
-			   myself->attrs.numlinks, myself->attrs.change);
-#endif
 	LogFullDebug(COMPONENT_FSAL,
 		     "hdl=%p, name=%s numlinks %"PRIu32,
 		     myself,
@@ -949,11 +946,13 @@ fsal_status_t s3_setattr2(struct fsal_obj_handle *obj_hdl,
 
 	s3_copy_attrs_mask(attrs_set, &myself->attrs);
 
-#ifdef USE_LTTNG
-	tracepoint(fsalmem, s3_setattrs, __func__, __LINE__, myself,
-			   myself->m_name, myself->attrs.filesize,
-			   myself->attrs.numlinks, myself->attrs.change);
-#endif
+	LogFullDebug(COMPONENT_FSAL, "%s: hdl=%p name=%s filesize=%lu links=%"PRIu32,
+		     __func__,
+		     myself,
+		     myself->m_name,
+		     myself->attrs.filesize,
+		     myself->attrs.numlinks);
+
 	return fsalstat(ERR_FSAL_NO_ERROR, EINVAL);
 }
 
@@ -988,8 +987,9 @@ static fsal_status_t s3_unlink(struct fsal_obj_handle *dir_hdl,
 		/* Check if directory is empty */
 		numkids = atomic_fetch_uint32_t(&myself->mh_dir.numkids);
 		if (numkids > 2) {
-			LogFullDebug(COMPONENT_FSAL,
-				     "%s numkids %"PRIu32,
+			LogFullDebug(COMPONENT_FSAL,				     
+				     "%s: name=%s numkids %"PRIu32,
+				     __func__,
 				     myself->m_name, numkids);
 			status = fsalstat(ERR_FSAL_NOTEMPTY, 0);
 			goto unlock;
@@ -1023,11 +1023,13 @@ static fsal_status_t s3_unlink(struct fsal_obj_handle *dir_hdl,
 unlock:
 	PTHREAD_RWLOCK_unlock(&dir_hdl->obj_lock);
 
-#ifdef USE_LTTNG
-	tracepoint(fsalmem, s3_unlink, __func__, __LINE__, parent,
-		   parent->m_name, myself, myself->m_name,
-		   myself->attrs.numlinks);
-#endif
+	LogFullDebug(COMPONENT_FSAL, "%s: parent=%p name=%s hdl=%p name=%s links=%"PRIu32,
+		     __func__,
+		     parent,
+		     parent->m_name,
+		     myself,
+		     myself->m_name,
+		     myself->attrs.numlinks);
 
 	return status;
 }
@@ -1123,10 +1125,14 @@ static fsal_status_t s3_rename(struct fsal_obj_handle *obj_hdl,
 		}
 	}
 
-#ifdef USE_LTTNG
-	tracepoint(fsalmem, s3_rename, __func__, __LINE__, s3_obj,
-		   s3_olddir->m_name, old_name, s3_newdir->m_name, new_name);
-#endif
+	LogFullDebug(COMPONENT_FSAL,
+		     "%s: s3obj=%p olddir.name=%s oldname=%s newdir.name=%s newname=%s",
+		     __func__,
+		     s3_obj,
+		     s3_olddir->m_name,
+		     old_name,
+		     s3_newdir->m_name,
+		     new_name);
 
 	/* Remove from old dir */
 	s3_remove_dirent(s3_olddir, old_name);
@@ -1204,10 +1210,10 @@ fsal_status_t s3_open2(struct fsal_obj_handle *obj_hdl,
 
 	if (name == NULL) {
 		/* This is an open by handle */
-#ifdef USE_LTTNG
-		tracepoint(fsalmem, s3_open, __func__, __LINE__, myself,
-			   myself->m_name, state, truncated, setattrs);
-#endif
+		LogFullDebug(COMPONENT_FSAL,
+			     "%s: myself=%p name=%s truncated=%d setattrs=%d",
+			     __func__, myself, myself->m_name, truncated, setattrs);
+
 		/* Need a lock to protect the FD */
 		PTHREAD_RWLOCK_wrlock(&obj_hdl->obj_lock);
 
@@ -1322,10 +1328,10 @@ fsal_status_t s3_open2(struct fsal_obj_handle *obj_hdl,
 				   obj_handle);
 		created = true;
 	}
-#ifdef USE_LTTNG
-	tracepoint(fsalmem, s3_open, __func__, __LINE__, hdl,
-		   hdl->m_name, state, truncated, setattrs);
-#endif
+
+	LogFullDebug(COMPONENT_FSAL,
+		     "%s: hdl=%p name=%s truncated=%d setattrs=%d",
+		     __func__, hdl, hdl->m_name, truncated, setattrs);
 
 	*caller_perm_check = !created;
 
@@ -1410,11 +1416,10 @@ fsal_status_t s3_reopen2(struct fsal_obj_handle *obj_hdl,
 	struct fsal_fd *my_fd = (struct fsal_fd *)(state + 1);
 	fsal_openflags_t old_openflags;
 
-#ifdef USE_LTTNG
-	tracepoint(fsalmem, s3_open, __func__, __LINE__, myself,
-			   myself->m_name, state, openflags & FSAL_O_TRUNC,
-			   false);
-#endif
+	LogFullDebug(COMPONENT_FSAL,
+		     "%s: myself=%p name=%s openflags=%x setattrs=%d",
+		     __func__, myself, myself->m_name, openflags & FSAL_O_TRUNC,
+		     false);
 
 	old_openflags = my_fd->openflags;
 
@@ -1516,11 +1521,11 @@ fsal_status_t s3_read2(struct fsal_obj_handle *obj_hdl,
 	}
 #endif
 
-#ifdef USE_LTTNG
-	tracepoint(fsalmem, s3_read, __func__, __LINE__, myself,
-		   myself->m_name, state, myself->attrs.filesize,
-		   myself->attrs.spaceused);
-#endif
+	LogFullDebug(COMPONENT_FSAL,
+		     "hdl=%p, name=%s size=%lu",
+		     myself,
+		     myself->m_name,
+		     myself->attrs.filesize);
 
 	*read_amount = buffer_size;
 	*end_of_file = (buffer_size == 0);
@@ -1609,11 +1614,12 @@ fsal_status_t s3_write2(struct fsal_obj_handle *obj_hdl,
 	}
 #endif
 
-#ifdef USE_LTTNG
-	tracepoint(fsalmem, s3_write, __func__, __LINE__, myself,
-			   myself->m_name, state, myself->attrs.filesize,
-			   myself->attrs.spaceused);
-#endif
+	LogFullDebug(COMPONENT_FSAL,
+		     "%s: hdl=%p, name=%s size=%lu",
+		     __func__,
+		     myself,
+		     myself->m_name,
+		     myself->attrs.filesize);
 
 	/* Update change stats */
 	now(&myself->attrs.mtime);
@@ -1752,10 +1758,11 @@ fsal_status_t s3_close2(struct fsal_obj_handle *obj_hdl,
 				  struct s3_fsal_obj_handle, obj_handle);
 	fsal_status_t status;
 
-#ifdef USE_LTTNG
-	tracepoint(fsalmem, s3_close, __func__, __LINE__, myself,
-		   myself->m_name, state);
-#endif
+	LogFullDebug(COMPONENT_FSAL,
+		     "%s: hdl=%p, name=%s",
+		     __func__,
+		     myself,
+		     myself->m_name);
 
 	if (state->state_type == STATE_TYPE_SHARE ||
 	    state->state_type == STATE_TYPE_NLM_SHARE ||
@@ -1864,10 +1871,6 @@ static void s3_release(struct fsal_obj_handle *obj_hdl)
 
 	if (myself->is_export || !glist_empty(&myself->dirents)) {
 		/* Entry is still live: it's either an export, or in a dir */
-#ifdef USE_LTTNG
-		tracepoint(fsalmem, s3_inuse, __func__, __LINE__, myself,
-			   myself->attrs.numlinks, myself->is_export);
-#endif
 		LogDebug(COMPONENT_FSAL,
 			 "Releasing live hdl=%p, name=%s, don't deconstruct it",
 			 myself, myself->m_name);
@@ -2043,10 +2046,9 @@ fsal_status_t s3_create_handle(struct fsal_export *exp_hdl,
 				 "Found hdl=%p name=%s",
 				 my_hdl, my_hdl->m_name);
 
-#ifdef USE_LTTNG
-			tracepoint(fsalmem, s3_create_handle, __func__,
-				   __LINE__, hdl, my_hdl->m_name);
-#endif
+			LogFullDebug(COMPONENT_FSAL, "%s: hdl=%p, name=%s",
+				     __func__, hdl, my_hdl->m_name);
+
 			*obj_hdl = hdl;
 
 //			PTHREAD_RWLOCK_unlock(&exp_hdl->fsal->lock);
