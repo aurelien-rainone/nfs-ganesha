@@ -4,6 +4,13 @@ add_definitions(
 
 SET(fsals3_LIB_SRCS
   up.c
+  main.c
+  export.c
+  handle.c
+  internal.c
+  internal.h
+  s3_methods.h
+  s3_methods.c
 )
 
 message("LIBS3_INCLUDE_DIRS ${LIBS3_INCLUDE_DIRS}")
