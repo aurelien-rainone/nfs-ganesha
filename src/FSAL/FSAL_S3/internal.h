@@ -46,9 +46,7 @@
 #include "avltree.h"
 #include "gsh_list.h"
 
-
 #include <libs3.h>
-
 
 #define S3_MIN_ACCESS_KEY_ID_SIZE 16
 #define S3_MAX_ACCESS_KEY_ID_SIZE 256		/* not sure about this */
@@ -60,17 +58,26 @@
  */
 
 struct s3_fsal_export {
-	struct fsal_export export;		/*< The public export object */
-	struct s3fs_fs *s3fs_fs;		/*< "Opaque" fs handle */
-	struct s3_fsal_obj_handle *root_handle;	/*< root handle */
-	char *s3fs_host;			/*< s3 host */
-	char *s3fs_bucket;			/*< s3 bucket name to be mounted */
-	char *s3fs_access_key;			/*< s3 access key id */
-	char *s3fs_secret_key;			/*< s3 secret key */
+	/*< The public export object */
+	struct fsal_export export;
+	/*< root handle */
+	struct s3_fsal_obj_handle *root_handle;
+	/*< s3 host */
+	char *s3_host;
+	/*< s3 name of bucket to be mounted as root*/
+	char *s3_bucket;
+	/*< s3 access key id */
+	char *s3_access_key;
+	/*< s3 secret key */
+	char *s3_secret_key;
+	/*< libs3 bucket context */
 	S3BucketContext bucket_ctx;
-	struct glist_head export_entry;		/*< Entry into list of exports */
-	pthread_rwlock_t mfe_exp_lock;		/*< Lock protecting mfe_objs */
-	struct glist_head mfe_objs;		/*< List of all the objects in this export */
+	/*< Entry into list of exports */
+	struct glist_head export_entry;
+	/*< Lock protecting mfe_objs */
+	pthread_rwlock_t mfe_exp_lock;
+	/*< List of all the objects in this export */
+	struct glist_head mfe_objs;
 };
 
 fsal_status_t s3_lookup_path(struct fsal_export *exp_hdl,
@@ -82,15 +89,6 @@ fsal_status_t s3_create_handle(struct fsal_export *exp_hdl,
 				  struct gsh_buffdesc *hdl_desc,
 				  struct fsal_obj_handle **handle,
 				  struct attrlist *attrs_out);
-
-
-/**
- * AR: file system handle: its main feature is to own the root file handle
- */
-
-struct s3fs_fs{
-    struct s3_file_handle* root_fh;	/*< Root file handle */
-};
 
 /**
  * The S3 FSAL internal handle
