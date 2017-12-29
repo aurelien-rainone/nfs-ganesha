@@ -103,8 +103,8 @@ struct fsal_staticfsinfo_t *s3_staticinfo(struct fsal_module *hdl)
 /* Initialize s3 fs info */
 
 static fsal_status_t s3_init_config(struct fsal_module *module_in,
-				config_file_t config_struct,
-				struct config_error_type *err_type)
+				    config_file_t config_struct,
+				    struct config_error_type *err_type)
 {
 	struct s3_fsal_module *s3_me =
 	    container_of(module_in, struct s3_fsal_module, fsal);
