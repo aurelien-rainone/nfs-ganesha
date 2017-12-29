@@ -168,7 +168,6 @@ static fsal_status_t s3_init_config(struct fsal_module *module_in,
 MODULE_INIT void init(void)
 {
 	struct fsal_module *myself = &S3.fsal;
-	S3Status s3st;
 
 	LogDebug(COMPONENT_FSAL,
 		 "S3 module registering.");
@@ -189,22 +188,12 @@ MODULE_INIT void init(void)
 	myself->m_ops.init_config = s3_init_config;
 	glist_init(&S3.s3_exports);
 	S3.next_inode = 0xc0ffee;
-
-	/* Initialize libs3 */
-	if ((s3st = S3_initialize("nfs-ganesha", S3_INIT_ALL, NULL)
-				  != S3StatusOK)) {
-		/*AR: TODO, better error handling */
-		LogCrit(COMPONENT_FSAL,
-			"S3 module can't initialize libS3.");
-	}
 }
 
 /**
  * @brief Release FSAL resources
  *
- * This function unregisters the FSAL and frees its module handle.  The
- * FSAL also has an open instance of the libs3 library, so we also need to
- * release that.
+ * This function unregisters the FSAL and frees its module handle.
  */
 
 MODULE_FINI void finish(void)
@@ -223,6 +212,4 @@ MODULE_FINI void finish(void)
 			"Unable to unload S3 FSAL.  Dying with extreme prejudice.");
 		abort();
 	}
-	/* release the library */
-	S3_deinitialize();
 }

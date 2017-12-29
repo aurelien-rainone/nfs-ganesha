@@ -63,7 +63,7 @@ struct fsal_staticfsinfo_t *s3_staticinfo(struct fsal_module *hdl);
  * @retval ERR_FSAL_BUSY if the export is in use.
  */
 
-static void release_export(struct fsal_export *exp_hdl)
+static void s3_release_export(struct fsal_export *exp_hdl)
 {
 	struct s3_fsal_export *myself;
 
@@ -92,6 +92,9 @@ static void release_export(struct fsal_export *exp_hdl)
 
 	/*gsh_free(myself->export_path);*/
 	gsh_free(myself);
+
+	/* release libs3 */
+	S3_deinitialize();
 }
 
 /**
@@ -424,7 +427,7 @@ static struct state_t *s3_alloc_state(struct fsal_export *exp_hdl,
 
 void s3_export_ops_init(struct export_ops *ops)
 {
-	ops->release = release_export;
+	ops->release = s3_release_export;
 	ops->lookup_path = s3_lookup_path;
 	ops->wire_to_host = s3_wire_to_host;
 	ops->create_handle = s3_create_handle;
@@ -790,7 +793,7 @@ fsal_status_t s3_create_export(struct fsal_module *module_in,
 		}
 	}
 
-	/* Fill the s3 bucket context */
+	/* Configure libs3 bucket context structure */
 	myself->bucket_ctx.hostName = myself->s3_host;
 	myself->bucket_ctx.bucketName = myself->s3_bucket;
 	myself->bucket_ctx.protocol = S3ProtocolHTTP;
@@ -798,6 +801,17 @@ fsal_status_t s3_create_export(struct fsal_module *module_in,
 	myself->bucket_ctx.accessKeyId = myself->s3_access_key;
 	myself->bucket_ctx.secretAccessKey = myself->s3_secret_key;
 	myself->bucket_ctx.authRegion = NULL;
+
+	/* Initialize libs3 */
+	if ((s3st = S3_initialize("nfs-ganesha", S3_INIT_ALL, myself->s3_host)
+				  != S3StatusOK)) {
+		/*AR: TODO, better error handling */
+		LogCrit(COMPONENT_FSAL,
+			"S3 module can't initialize libS3.");
+		gsh_free(myself);
+		// AR: TODO, convert S3 errors to fsal stat errors
+		return fsalstat(ERR_FSAL_BAD_INIT, 0);
+	}
 
 	/* AR: now we have 2 things to check before registering the nex export:
 	 * 1. user credentials are valid
