@@ -198,6 +198,12 @@ struct s3_fsal_module {
 	uint32_t up_interval;
 	/** Next unused inode */
 	uint64_t next_inode;
+	/** max retries */
+	uint32_t max_retries;
+	/** sleep interval between successive retries (seconds) */
+	uint32_t sleep_interval;
+	/** total request timeout (milliseconds), 0 means no timeout (i.e infinite) */
+	uint32_t request_timeout;
 };
 
 

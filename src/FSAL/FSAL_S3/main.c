@@ -27,6 +27,7 @@
  */
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <assert.h>
 #include "gsh_list.h"
 #include "fsal.h"
@@ -77,6 +78,12 @@ static struct fsal_staticfsinfo_t default_s3_info = {
 /*AR: check if 2 level of configuration are needed for S3
  */
 static struct config_item s3_items[] = {
+	CONF_ITEM_UI32("max_retries", 0, 10, 3,
+		      s3_fsal_module, max_retries),
+	CONF_ITEM_UI32("sleep_interval", 1, 5, 1,
+		      s3_fsal_module, sleep_interval),
+	CONF_ITEM_UI32("request_timeout", 0, UINT32_MAX, 0,
+		      s3_fsal_module, request_timeout),
 	CONFIG_EOL
 };
 
