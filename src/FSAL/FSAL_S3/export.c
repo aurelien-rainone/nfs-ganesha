@@ -758,9 +758,9 @@ static fsal_status_t create_export(struct fsal_module *module_in,
 #else
 
 fsal_status_t s3_create_export(struct fsal_module *module_in,
-				      void *parse_node,
-				      struct config_error_type *err_type,
-				      const struct fsal_up_vector *up_ops)
+			       void *parse_node,
+			       struct config_error_type *err_type,
+			       const struct fsal_up_vector *up_ops)
 {
 	struct s3_fsal_export *myself;
 	int retval = 0;

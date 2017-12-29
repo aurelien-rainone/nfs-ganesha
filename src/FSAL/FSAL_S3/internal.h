@@ -47,6 +47,7 @@
 #include "gsh_list.h"
 
 #include <libs3.h>
+//#include "s3_methods.h"
 
 #define S3_MIN_ACCESS_KEY_ID_SIZE 16
 #define S3_MAX_ACCESS_KEY_ID_SIZE 256		/* not sure about this */
@@ -62,6 +63,7 @@ struct s3_fsal_export {
 	struct fsal_export export;
 	/*< root handle */
 	struct s3_fsal_obj_handle *root_handle;
+
 	/*< s3 host */
 	char *s3_host;
 	/*< s3 name of bucket to be mounted as root*/
@@ -70,8 +72,10 @@ struct s3_fsal_export {
 	char *s3_access_key;
 	/*< s3 secret key */
 	char *s3_secret_key;
+
 	/*< libs3 bucket context */
 	S3BucketContext bucket_ctx;
+
 	/*< Entry into list of exports */
 	struct glist_head export_entry;
 	/*< Lock protecting mfe_objs */
