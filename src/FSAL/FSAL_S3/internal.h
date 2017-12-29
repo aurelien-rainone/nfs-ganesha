@@ -50,10 +50,10 @@
 #include <libs3.h>
 
 
-//AR: TODO: directly take from libs3.h
-#define MAXUIDLEN 32
-#define MAXKEYLEN 20
-#define MAXSECRETLEN 40
+#define S3_MIN_ACCESS_KEY_ID_SIZE 16
+#define S3_MAX_ACCESS_KEY_ID_SIZE 256		/* not sure about this */
+#define S3_MIN_SECRET_ACCESS_KEY_SIZE 0		/* not sure about this */
+#define S3_MAX_SECRET_ACCESS_KEY_SIZE 256	/* not sure about this */
 
 /**
  * S3 internal export object

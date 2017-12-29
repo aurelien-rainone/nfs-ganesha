@@ -467,13 +467,13 @@ void s3_export_ops_init(struct export_ops *ops)
 
 static struct config_item export_params[] = {
 	CONF_ITEM_NOOP("name"),
-	CONF_MAND_STR("host", 0, S3_MAX_HOSTNAME_SIZE-1, NULL,
+	CONF_MAND_STR("host", 0, S3_MAX_HOSTNAME_SIZE, NULL,
 		      s3_fsal_export, s3fs_host),
-	CONF_MAND_STR("bucket_name", 0, S3_MAX_BUCKET_NAME_SIZE-1, NULL,
+	CONF_MAND_STR("bucket_name", 0, S3_MAX_BUCKET_NAME_SIZE, NULL,
 		      s3_fsal_export, s3fs_bucket),
-	CONF_MAND_STR("access_key_id", 0, S3_MAX_KEY_SIZE-1, NULL,
+	CONF_MAND_STR("access_key_id", S3_MIN_ACCESS_KEY_ID_SIZE, S3_MAX_ACCESS_KEY_ID_SIZE, NULL,
 		      s3_fsal_export, s3fs_access_key),
-	CONF_MAND_STR("secret_access_key", 0, S3_MAX_KEY_SIZE-1, NULL,
+	CONF_MAND_STR("secret_access_key", S3_MIN_SECRET_ACCESS_KEY_SIZE, S3_MAX_SECRET_ACCESS_KEY_SIZE, NULL,
 		      s3_fsal_export, s3fs_secret_key),
 	CONFIG_EOL
 };
