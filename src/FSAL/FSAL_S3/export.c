@@ -45,6 +45,7 @@
 #include "FSAL/fsal_commonlib.h"
 #include "FSAL/fsal_config.h"
 #include "internal.h"
+#include "s3_methods.h"
 
 /* helpers to/from other S3 objects
  */
@@ -763,8 +764,10 @@ fsal_status_t s3_create_export(struct fsal_module *module_in,
 			       const struct fsal_up_vector *up_ops)
 {
 	struct s3_fsal_export *myself;
+	struct s3_response_callback_data cbdata = { S3StatusOK };
 	int retval = 0;
 	int rc;
+	S3Status s3st;
 	pthread_rwlockattr_t attrs;
 
 	myself = gsh_calloc(1, sizeof(struct s3_fsal_export));
@@ -813,11 +816,11 @@ fsal_status_t s3_create_export(struct fsal_module *module_in,
 		return fsalstat(ERR_FSAL_BAD_INIT, 0);
 	}
 
-	/* AR: now we have 2 things to check before registering the nex export:
-	 * 1. user credentials are valid
-	 * 2. the specified bucket exists
-	 */
-	// TODO: le faire!!
+	test_bucket(&myself->bucket_ctx, &cbdata);
+	if (cbdata.status != S3StatusOK) {
+		LogCrit(COMPONENT_FSAL, "test bucket error %s",
+		S3_get_status_name(cbdata.status));
+	}
 
 	retval = fsal_attach_export(module_in, &myself->export.exports);
 
@@ -834,16 +837,12 @@ fsal_status_t s3_create_export(struct fsal_module *module_in,
 	myself->export.fsal = module_in;
 	myself->export.up_ops = up_ops;
 
-	/* Save the export path. */
-//	myself->export_path = gsh_strdup(op_ctx->ctx_export->fullpath);
+	/* Record this export in the thread local storage */
 	op_ctx->fsal_export = &myself->export;
 
 	/* Insert into exports list */
 	glist_add_tail(&S3.s3_exports, &myself->export_entry);
 
-//	LogDebug(COMPONENT_FSAL,
-//		 "Created exp %p - %s",
-//		 myself, myself->export_path);
 	LogDebug(COMPONENT_FSAL,
 		 "Created exp %p",
 		 myself);
