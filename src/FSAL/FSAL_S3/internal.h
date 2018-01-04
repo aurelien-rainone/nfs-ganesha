@@ -46,8 +46,8 @@
 #include "avltree.h"
 #include "gsh_list.h"
 
-#include <libs3.h>
-//#include "s3_methods.h"
+#include "s3_methods.h"
+
 
 #define S3_MIN_ACCESS_KEY_ID_SIZE 16
 #define S3_MAX_ACCESS_KEY_ID_SIZE 256		/* not sure about this */
@@ -185,6 +185,15 @@ static inline void _s3_free_handle(struct s3_fsal_obj_handle *hdl,
 /* Prototypes */
 void s3_clean_export(struct s3_fsal_obj_handle *root);
 void s3_clean_all_dirents(struct s3_fsal_obj_handle *parent);
+struct s3_dirent *
+s3_dirent_lookup(struct s3_fsal_obj_handle *dir, const char *name);
+fsal_status_t s3_create_obj(struct s3_fsal_obj_handle *parent,
+			    object_file_type_t type,
+			    const char *name,
+			    struct attrlist *attrs_in,
+			    struct fsal_obj_handle **new_obj,
+			    struct attrlist *attrs_out);
+
 
 /**
  * @brief FSAL Module wrapper for S3

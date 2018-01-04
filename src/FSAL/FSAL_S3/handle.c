@@ -30,6 +30,7 @@
  */
 
 #include <fcntl.h>
+#include <string.h>
 #include "fsal.h"
 #include "fsal_types.h"
 #include "fsal_convert.h"
@@ -542,6 +543,7 @@ _s3_alloc_handle(struct s3_fsal_obj_handle *parent,
 		avltree_init(&hdl->mh_dir.avl_name, s3_n_cmpf, 0);
 		avltree_init(&hdl->mh_dir.avl_index, s3_i_cmpf, 0);
 		hdl->mh_dir.next_i = 2;
+		hdl->mh_dir.parent = parent;
 		hdl->attrs.numlinks = 2;
 		hdl->mh_dir.numkids = 2;
 		break;
@@ -613,7 +615,7 @@ static fsal_status_t _s3_int_lookup(struct s3_fsal_obj_handle *dir,
 	return fsalstat(ERR_FSAL_NO_ERROR, 0);
 }
 
-static fsal_status_t s3_create_obj(struct s3_fsal_obj_handle *parent,
+fsal_status_t s3_create_obj(struct s3_fsal_obj_handle *parent,
 				    object_file_type_t type,
 				    const char *name,
 				    struct attrlist *attrs_in,
@@ -717,6 +719,18 @@ out:
 }
 
 /**
+ * Prepends t into s. Assumes s has enough space allocated
+ * for the combined string.
+ */
+void prepend(char* s, const char* t)
+{
+    size_t i, len = strlen(t);
+    memmove(s + len, s, strlen(s) + 1);
+    for (i = 0; i < len; ++i)
+	s[i] = t[i];
+}
+
+/**
  * @brief Read a directory
  *
  * This function reads the contents of a directory (excluding . and
@@ -744,21 +758,54 @@ static fsal_status_t s3_readdir(struct fsal_obj_handle *dir_hdl,
 	struct avltree_node *node;
 	fsal_cookie_t seekloc = 0;
 	struct attrlist attrs;
+	S3Status s3sta;
 	enum fsal_dir_result cb_rc;
 
 	myself = container_of(dir_hdl,
 			      struct s3_fsal_obj_handle,
 			      obj_handle);
 
-	if (whence != NULL)
-		seekloc = *whence;
-	else
-		seekloc = 2;
+	/* when whence_is_name, whence is a char pointer cast to
+	 * fsal_cookie_t */
+	const char *r_whence = (const char*) whence;
+//	if (whence != NULL)
+//		seekloc = *whence;
+//	else
+//		seekloc = 2;
+
+	// TODO: use r_whence as marker when enumerating from an arbitrary position will
+	// be implemented on the S3 frontend
+	char *marker = NULL, *prefix = NULL;
+	const int maxkeys = 0;
+	const int allDetails = 1;
+
+	/** Set 'prefix` to the full S3 path of the directory to read.
+	 * To mean the S3 root, prefix should be NULL. To ean any other
+	 * directory, prefix must not start with '/' but must end with '/'.
+	 */
+	struct s3_fsal_obj_handle *cur_dir = myself;
+	char path[S3_MAX_KEY_SIZE];
+	path[0] = '\0';
+	while(cur_dir ->mh_dir.parent != NULL) {
+		prepend(path, "/");
+		prepend(path, cur_dir->m_name);
+		cur_dir = cur_dir ->mh_dir.parent;
+		assert(dir_hdl->type == DIRECTORY);
+		prefix = path;
+	}
+
+	s3sta = list_bucket(&myself->mfo_exp->bucket_ctx, myself, prefix, marker, "/", maxkeys, allDetails);
+	if (s3sta != S3StatusOK) {
+		LogCrit(COMPONENT_FSAL,
+			"%s: error listing bucket hdl=%p, name=%s, err=%s",
+			__func__, myself, myself->m_name,
+			S3_get_status_name(s3sta));
+	}
 
 	*eof = true;
 
-	LogFullDebug(COMPONENT_FSAL, "%s: hdl=%p, name=%s",
-		     __func__, myself, myself->m_name);
+	LogFullDebug(COMPONENT_FSAL, "%s: hdl=%p, name=%s, r_whence=%s",
+		     __func__, myself, myself->m_name, r_whence);
 
 	/*PTHREAD_RWLOCK_rdlock(&dir_hdl->obj_lock);*/
 
@@ -1978,12 +2025,10 @@ fsal_status_t s3_lookup_path(struct fsal_export *export_pub,
 	}
 
 	/* alloc root file handle */
-	attrs.valid_mask = ATTR_MODE;
-	attrs.mode = 0755;
-
 	if (export->root_handle == NULL) {
+		attrs.valid_mask = ATTR_MODE;
+		attrs.mode = 0755;
 		export->root_handle = s3_alloc_handle(NULL,
-//						    export->export_path,
 						    "/",
 						    DIRECTORY,
 						    export,
