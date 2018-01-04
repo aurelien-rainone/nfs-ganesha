@@ -195,6 +195,7 @@ void s3_resp_complete_cb(S3Status status,
 typedef struct list_bucket_callback_data
 {
 	int isTruncated;
+	char *prefix;		/*< request prefix */
 	char nextMarker[1024];
 	int keyCount;
 	int allDetails;
@@ -229,6 +230,7 @@ static S3Status listBucketCallback(int isTruncated, const char *nextMarker,
 	printf("listBucketCallback response:\n");
 
 	char timebuf[256];
+	char *filename = gsh_malloc(S3_MAX_KEY_SIZE);
 	int i;
 	for (i = 0; i < contentsCount; i++) {
 		const S3ListBucketContent *content = &(contents[i]);
@@ -236,7 +238,20 @@ static S3Status listBucketCallback(int isTruncated, const char *nextMarker,
 		time_t t = (time_t) content->lastModified;
 		strftime(timebuf, sizeof(timebuf), "%Y-%m-%dT%H:%M:%SZ",
 			 gmtime(&t));
-		printf("\nKey: %s\n", content->key);
+
+		/** extract filename from the full key name by removing the
+		 *  common prefix used for the request */
+		if (data->prefix) {
+			if (strstr(content->key, data->prefix)) {
+				strcpy(filename, content->key + strlen(data->prefix));
+				printf("filename = %s\n", filename);
+			}
+		} else {
+			/* copy the whole key name */
+			strncpy(filename, content->key, S3_MAX_KEY_SIZE);
+		}
+
+		printf("\nKey: %s (filename=%s)\n", content->key, filename);
 		printf("Last Modified: %s\n", timebuf);
 		printf("ETag: %s\n", content->eTag);
 		printf("Size: %llu\n", (unsigned long long) content->size);
@@ -248,11 +263,11 @@ static S3Status listBucketCallback(int isTruncated, const char *nextMarker,
 		}
 
 		// check if a dirent for this key already exists
-		const struct s3_dirent *ent = s3_dirent_lookup(data->parent, content->key);
+		const struct s3_dirent *ent = s3_dirent_lookup(data->parent, filename);
 		if (ent) {
 			// object already exists
 			// TODO: check if it is of the same type (file/dir) and update attributes
-			LogDebug(COMPONENT_FSAL, "dirent for %s already exists", content->key);
+			LogDebug(COMPONENT_FSAL, "dirent for %s already exists", filename);
 		} else {
 			// create and fill a new handle corresponding to this key
 			struct fsal_obj_handle *new_obj;
@@ -267,18 +282,36 @@ static S3Status listBucketCallback(int isTruncated, const char *nextMarker,
 			attrs_in.mtime.tv_sec = content->lastModified;
 			attrs_in.valid_mask |= ATTR_MTIME;
 
-			status = s3_create_obj(data->parent, REGULAR_FILE, content->key, &attrs_in,
+			LogFullDebug(COMPONENT_FSAL,
+				     "listBucketCallback, s3_create_obj(FILE), fullname=%s, name=%s",
+				      content->key, filename);
+
+			status = s3_create_obj(data->parent, REGULAR_FILE, filename, &attrs_in,
 					  &new_obj, &attrs_out);
 			if (FSAL_IS_ERROR(status)) {
 				LogCrit(COMPONENT_FSAL,
-				"listBucketCallback, s3_create_obj(FILE) error, name=%s status=%s",
-				content->key, msg_fsal_err(status.major));
+				"listBucketCallback, s3_create_obj(FILE) error, fullname=%s, name=%s status=%s",
+				content->key, filename, msg_fsal_err(status.major));
 			}
 		}
 	}
 
 	for (i = 0; i < commonPrefixesCount; i++) {
 		printf("\nCommon Prefix: %s\n", commonPrefixes[i]);
+
+		/** extract filename from the full key name by removing the
+		 *  common prefix used for the request
+		 *  -1 to remove the trailing '/' */
+		if (data->prefix) {
+			if (strstr(commonPrefixes[i], data->prefix)) {
+				strcpy(filename, commonPrefixes[i] + strlen(data->prefix) - 1);
+				printf("filename = %s\n", filename);
+			}
+		} else {
+			strncpy(filename, commonPrefixes[i], S3_MAX_KEY_SIZE);
+			filename[strlen(filename) - 1] = '\0'; /* remove trailing slash */
+		}
+
 		// check if a dirent for this dir already exists
 		const struct s3_dirent *ent = s3_dirent_lookup(data->parent, commonPrefixes[i]);
 		if (ent) {
@@ -290,22 +323,24 @@ static S3Status listBucketCallback(int isTruncated, const char *nextMarker,
 			struct fsal_obj_handle *new_obj;
 			struct attrlist attrs_in, attrs_out;
 			fsal_status_t status = {0, 0};
-			// remove the trailing slash
-			char *dir_name = (char*)commonPrefixes[i];
-			dir_name[strlen(dir_name)-1] = '\0';
 
 			attrs_in.mode = 0755;
 			attrs_in.valid_mask = ATTR_MODE;
 
-			status = s3_create_obj(data->parent, DIRECTORY, dir_name, &attrs_in,
+			LogFullDebug(COMPONENT_FSAL,
+				     "listBucketCallback, s3_create_obj(DIR), fullname=%s, name=%s",
+				      commonPrefixes[i], filename);
+
+			status = s3_create_obj(data->parent, DIRECTORY, filename, &attrs_in,
 					  &new_obj, &attrs_out);
 			if (FSAL_IS_ERROR(status)) {
 				LogCrit(COMPONENT_FSAL,
-				"listBucketCallback, s3_create_obj(DIR) error, name=%s status=%s",
-				dir_name, msg_fsal_err(status.major));
+				"listBucketCallback, s3_create_obj(DIR) error, fullname=%s, name=%s status=%s",
+				commonPrefixes[i], filename, msg_fsal_err(status.major));
 			}
 		}
 	}
+	gsh_free(filename);
 
 	return S3StatusOK;
 }
@@ -329,6 +364,7 @@ S3Status list_bucket(const S3BucketContext *bucketContext, struct s3_fsal_obj_ha
 	data.keyCount = 0;
 	data.allDetails = allDetails;
 	data.parent = parent;
+	data.prefix = (char*) prefix;
 
 	// setup retry variables
 	int num_retries = S3.max_retries;
