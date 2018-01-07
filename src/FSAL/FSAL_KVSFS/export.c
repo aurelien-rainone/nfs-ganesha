@@ -322,7 +322,7 @@ fsal_status_t kvsfs_create_export(struct fsal_module *fsal_hdl,
 	if (retval != 0)
 		goto errout;
 
-	retval = kvsns_start();
+	retval = kvsns_start(KVSNS_DEFAULT_CONFIG);
 	if (retval != 0) {
 		LogMajor(COMPONENT_FSAL, "Can't start KVSNS API");
 		goto errout;
