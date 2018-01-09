@@ -59,6 +59,7 @@ static void release(struct fsal_export *exp_hdl)
 	fsal_detach_export(exp_hdl->fsal, &exp_hdl->exports);
 	free_export_ops(exp_hdl);
 
+	kvsns_stop();
 	gsh_free(myself);		/* elvis has left the building */
 }
 
