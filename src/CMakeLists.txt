@@ -280,7 +280,7 @@ option(USE_9P_RDMA "enable 9P_RDMA support" OFF)
 option(USE_VSOCK "enable AF_VSOCK listener" OFF)
 if (USE_VSOCK)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DRPC_VSOCK")
-endif(LINUX)
+endif(USE_VSOCK)
 
 # This option will stop cmake compilation if a requested FSAL could not be built
 option(STRICT_PACKAGE "Enable strict packaging behavior" OFF )
