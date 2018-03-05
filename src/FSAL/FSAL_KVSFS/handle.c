@@ -178,13 +178,16 @@ fsal_status_t kvsfs_lookup_path(struct fsal_export *exp_hdl,
 	if (rc != 0)
 		return fsalstat(posix2fsal_error(-rc), -rc);
 
-	cred.uid = op_ctx->creds->caller_uid;
-	cred.gid = op_ctx->creds->caller_gid;
-
-
-	rc = kvsns_getattr(&cred, &object, &stat);
+	rc = kvsns_init_root(1);
 	if (rc != 0)
 		return fsalstat(posix2fsal_error(-rc), -rc);
+
+	cred.uid = op_ctx->creds->caller_uid;
+	cred.gid = op_ctx->creds->caller_gid;
+	rc = kvsns_getattr(&cred, &object, &stat);
+	if (rc != 0) {
+			return fsalstat(posix2fsal_error(-rc), -rc);
+	}
 
 	fh.kvsfs_handle = object;
 
