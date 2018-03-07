@@ -524,6 +524,27 @@ static int client_commit(void *node, void *link_mem, void *self_struct,
 	return errcnt;
 }
 
+#define PAD_SIZE        1024
+#define PAD_CHAR        0xE5
+
+static void
+check_buf(char *name, char *s)
+{
+    int j, count = 0;
+
+    for (j = 0; j < PAD_SIZE; j++) {
+        if ((unsigned char)*s != PAD_CHAR) {
+            count++;
+        }
+        s++;
+    }
+
+    if (count != 0) {
+        LogFatal(COMPONENT_CONFIG, "%s corrupted by %d bytes\n", name, count);
+    }
+}
+
+
 /**
  * @brief Commit a FSAL sub-block
  *
@@ -537,6 +558,7 @@ static int client_commit(void *node, void *link_mem, void *self_struct,
 static int fsal_commit(void *node, void *link_mem, void *self_struct,
 		       struct config_error_type *err_type)
 {
+    char pad_a[PAD_SIZE];
 	struct fsal_export **exp_hdl = link_mem;
 	struct gsh_export *export =
 	    container_of(exp_hdl, struct gsh_export, fsal_export);
@@ -546,6 +568,10 @@ static int fsal_commit(void *node, void *link_mem, void *self_struct,
 	uint64_t MaxRead, MaxWrite;
 	fsal_status_t status;
 	int errcnt;
+
+	char pad_b[PAD_SIZE];
+    memset(pad_a, PAD_CHAR, PAD_SIZE);
+    memset(pad_b, PAD_CHAR, PAD_SIZE);
 
 	/* Initialize req_ctx */
 	init_root_op_context(&root_op_context, export, NULL, 0, 0,
@@ -614,6 +640,8 @@ static int fsal_commit(void *node, void *link_mem, void *self_struct,
 
 err:
 	release_root_op_context();
+	check_buf("fsal_commit():pad_a", pad_a);
+	check_buf("fsal_commit():pad_b", pad_b);
 	return errcnt;
 }
 
