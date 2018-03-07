@@ -54,6 +54,8 @@ fsal_status_t kvsfs_open(struct fsal_obj_handle *obj_hdl,
 	int rc = 0;
 	kvsns_cred_t cred;
 
+	LogDebug(COMPONENT_FSAL, "hdl=0x%p flags=0x%x", obj_hdl, openflags);
+
 	cred.uid = op_ctx->creds->caller_uid;
 	cred.gid = op_ctx->creds->caller_gid;
 
@@ -113,6 +115,8 @@ fsal_status_t kvsfs_read(struct fsal_obj_handle *obj_hdl,
 	kvsns_cred_t cred;
 	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
 
+	LogDebug(COMPONENT_FSAL, "hdl=0x%p off=%llu sz=%lu", obj_hdl, offset, buffer_size);
+
 	cred.uid = op_ctx->creds->caller_uid;
 	cred.gid = op_ctx->creds->caller_gid;
 
@@ -155,6 +159,8 @@ fsal_status_t kvsfs_write(struct fsal_obj_handle *obj_hdl,
 	kvsns_cred_t cred;
 	int retval = 0;
 
+	LogDebug(COMPONENT_FSAL, "hdl=0x%p off=%llu sz=%lu", obj_hdl, offset, buffer_size);
+
 	cred.uid = op_ctx->creds->caller_uid;
 	cred.gid = op_ctx->creds->caller_gid;
 
@@ -182,6 +188,7 @@ fsal_status_t kvsfs_write(struct fsal_obj_handle *obj_hdl,
 fsal_status_t kvsfs_commit(struct fsal_obj_handle *obj_hdl,	/* sync */
 			  off_t offset, size_t len)
 {
+	LogDebug(COMPONENT_FSAL, " not implemented hdl=0x%p off=%llu len=%lu", obj_hdl, offset, len);
 	return fsalstat(ERR_FSAL_NO_ERROR, 0);
 }
 
@@ -196,6 +203,8 @@ fsal_status_t kvsfs_close(struct fsal_obj_handle *obj_hdl)
 	struct kvsfs_fsal_obj_handle *myself;
 	int retval = 0;
 	fsal_errors_t fsal_error = ERR_FSAL_NO_ERROR;
+
+	LogDebug(COMPONENT_FSAL, "hdl=0x%p", obj_hdl);
 
 	assert(obj_hdl->type == REGULAR_FILE);
 	myself = container_of(obj_hdl,
@@ -221,6 +230,7 @@ fsal_status_t kvsfs_close(struct fsal_obj_handle *obj_hdl)
 fsal_status_t kvsfs_lru_cleanup(struct fsal_obj_handle *obj_hdl,
 			       lru_actions_t requests)
 {
+	LogDebug(COMPONENT_FSAL, "hdl=0x%p lru_req=0x%x", obj_hdl, requests);
 	return fsalstat(ERR_FSAL_NO_ERROR, 0);
 }
 

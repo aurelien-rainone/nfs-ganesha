@@ -117,6 +117,8 @@ static fsal_status_t kvsfs_lookup(struct fsal_obj_handle *parent,
 	kvsns_cred_t cred;
 	kvsns_ino_t object;
 
+	LogDebug(COMPONENT_FSAL, "hdl=0x%p path=%s", parent, path);
+
 	if (!path)
 		return fsalstat(ERR_FSAL_FAULT, 0);
 
@@ -171,6 +173,8 @@ fsal_status_t kvsfs_lookup_path(struct fsal_export *exp_hdl,
 	kvsns_cred_t cred;
 	struct kvsfs_fsal_obj_handle *hdl;
 
+	LogDebug(COMPONENT_FSAL, "path=%s", path);
+
 	if (strcmp(path, "/"))
 		return fsalstat(ERR_FSAL_NOTSUPP, 0);
 
@@ -212,6 +216,8 @@ static fsal_status_t kvsfs_create(struct fsal_obj_handle *dir_hdl,
 	kvsns_cred_t cred;
 	kvsns_ino_t object;
 	struct stat stat;
+
+	LogDebug(COMPONENT_FSAL, "hdl=0x%p name=%s", dir_hdl, name);
 
 	*handle = NULL;		/* poison it */
 	if (!dir_hdl->obj_ops.handle_is(dir_hdl, DIRECTORY)) {
@@ -259,6 +265,8 @@ static fsal_status_t kvsfs_mkdir(struct fsal_obj_handle *dir_hdl,
 	kvsns_cred_t cred;
 	kvsns_ino_t object;
 	struct stat stat;
+
+	LogDebug(COMPONENT_FSAL, "hdl=0x%p name=%s", dir_hdl, name);
 
 	*handle = NULL;		/* poison it */
 	if (!dir_hdl->obj_ops.handle_is(dir_hdl, DIRECTORY)) {
@@ -549,6 +557,8 @@ static fsal_status_t kvsfs_getattrs(struct fsal_obj_handle *obj_hdl)
 	int retval = 0;
 	kvsns_cred_t cred;
 
+	LogDebug(COMPONENT_FSAL, "hdl=0x%p", obj_hdl);
+
 	myself =
 		container_of(obj_hdl, struct kvsfs_fsal_obj_handle, obj_handle);
 
@@ -606,6 +616,8 @@ static fsal_status_t kvsfs_setattrs(struct fsal_obj_handle *obj_hdl,
 	int retval = 0;
 	int flags = 0;
 	kvsns_cred_t cred;
+
+	LogDebug(COMPONENT_FSAL, "hdl=0x%p", obj_hdl);
 
 	/* apply umask, if mode attribute is to be changed */
 	if (FSAL_TEST_MASK(attrs->mask, ATTR_MODE))
