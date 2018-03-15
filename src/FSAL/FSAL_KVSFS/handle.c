@@ -134,13 +134,7 @@ static fsal_status_t kvsfs_lookup(struct fsal_obj_handle *parent,
 	cred.uid = op_ctx->creds->caller_uid;
 	cred.gid = op_ctx->creds->caller_gid;
 	retval = kvsns_lookup(&cred, &parent_hdl->handle->kvsfs_handle,
-			      (char *)path, &object);
-	if (retval) {
-		fsal_error = posix2fsal_error(-retval);
-		goto errout;
-	}
-
-	retval = kvsns_getattr(&cred, &object, &stat);
+			      (char *)path, &object, &stat);
 	if (retval) {
 		fsal_error = posix2fsal_error(-retval);
 		goto errout;
@@ -617,14 +611,14 @@ static fsal_status_t kvsfs_setattrs(struct fsal_obj_handle *obj_hdl,
 	int flags = 0;
 	kvsns_cred_t cred;
 
-	LogDebug(COMPONENT_FSAL, "hdl=0x%p", obj_hdl);
-
 	/* apply umask, if mode attribute is to be changed */
 	if (FSAL_TEST_MASK(attrs->mask, ATTR_MODE))
 		attrs->mode &= ~op_ctx->fsal_export->exp_ops.
 				fs_umask(op_ctx->fsal_export);
 	myself =
 		container_of(obj_hdl, struct kvsfs_fsal_obj_handle, obj_handle);
+
+	LogDebug(COMPONENT_FSAL, "hdl=%llu", myself->handle->kvsfs_handle);
 
 	/* First, check that FSAL attributes */
 	if (FSAL_TEST_MASK(attrs->mask, ATTR_SIZE)) {
@@ -712,15 +706,9 @@ static fsal_status_t kvsfs_unlink(struct fsal_obj_handle *dir_hdl,
 
 	/* check for presence of file and get its type */
 	retval = kvsns_lookup(&cred, &myself->handle->kvsfs_handle,
-			      (char *)name, &object);
+			      (char *)name, &object, &stat);
 
 	if (retval == 0) {
-
-		retval = kvsns_getattr(&cred, &object, &stat);
-		if (retval) {
-			fsal_error = posix2fsal_error(-retval);
-			return fsalstat(fsal_error, -retval);
-		}
 
 		if ((stat.st_mode & S_IFDIR) == S_IFDIR)
 			retval = kvsns_rmdir(&cred,
