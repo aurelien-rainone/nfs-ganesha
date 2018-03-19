@@ -182,7 +182,7 @@ fsal_status_t kvsfs_lookup_path(struct fsal_export *exp_hdl,
 
 	cred.uid = op_ctx->creds->caller_uid;
 	cred.gid = op_ctx->creds->caller_gid;
-	rc = kvsns_getattr(&cred, &object, &stat);
+	rc = kvsns_getattr(&cred, &object, 1, &stat);
 	if (rc != 0) {
 			return fsalstat(posix2fsal_error(-rc), -rc);
 	}
@@ -232,7 +232,7 @@ static fsal_status_t kvsfs_create(struct fsal_obj_handle *dir_hdl,
 	if (retval)
 		goto fileerr;
 
-	retval = kvsns_getattr(&cred, &object, &stat);
+	retval = kvsns_getattr(&cred, &object, 1, &stat);
 	if (retval)
 		goto fileerr;
 
@@ -280,7 +280,7 @@ static fsal_status_t kvsfs_mkdir(struct fsal_obj_handle *dir_hdl,
 			     fsal2unix_mode(attrib->mode), &object);
 	if (retval)
 		goto fileerr;
-	retval = kvsns_getattr(&cred, &object, &stat);
+	retval = kvsns_getattr(&cred, &object, 1, &stat);
 	if (retval)
 		goto fileerr;
 
@@ -346,7 +346,7 @@ static fsal_status_t kvsfs_makesymlink(struct fsal_obj_handle *dir_hdl,
 	if (retval)
 		goto err;
 
-	retval = kvsns_getattr(&cred, &object, &stat);
+	retval = kvsns_getattr(&cred, &object, 1, &stat);
 	if (retval)
 		goto err;
 
@@ -559,7 +559,7 @@ static fsal_status_t kvsfs_getattrs(struct fsal_obj_handle *obj_hdl)
 	cred.uid = op_ctx->creds->caller_uid;
 	cred.gid = op_ctx->creds->caller_gid;
 
-	retval = kvsns_getattr(&cred, &myself->handle->kvsfs_handle, &stat);
+	retval = kvsns_getattr(&cred, &myself->handle->kvsfs_handle, 1, &stat);
 
 	/* An explanation is required here.
 	 * This is an exception management.
@@ -862,7 +862,7 @@ fsal_status_t kvsfs_create_handle(struct fsal_export *exp_hdl,
 	cred.uid = op_ctx->creds->caller_uid;
 	cred.gid = op_ctx->creds->caller_gid;
 
-	retval = kvsns_getattr(&cred, &fh.kvsfs_handle, &stat);
+	retval = kvsns_getattr(&cred, &fh.kvsfs_handle, 1, &stat);
 	if (retval)
 		return fsalstat(posix2fsal_error(-retval), -retval);
 

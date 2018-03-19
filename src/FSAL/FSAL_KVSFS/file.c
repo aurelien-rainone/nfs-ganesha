@@ -77,7 +77,7 @@ fsal_status_t kvsfs_open(struct fsal_obj_handle *obj_hdl,
 
 	/* save the stat */
 	rc = kvsns_getattr(&cred, &myself->handle->kvsfs_handle,
-			   &myself->u.file.saved_stat);
+			   1, &myself->u.file.saved_stat);
 
 	if (rc) {
 		fsal_error = posix2fsal_error(-rc);
